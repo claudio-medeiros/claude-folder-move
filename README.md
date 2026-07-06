@@ -8,6 +8,17 @@ This tool handles the fiddly migration of Claude Code state — session transcri
 ![Node 18+](https://img.shields.io/badge/node-18%2B-brightgreen)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue)
 
+## Quick Links
+
+- [Installation](#installation) — Setup instructions
+- [Usage](#usage) — Interactive and non-interactive modes
+- [Interactive Flow](#interactive-flow) — Step-by-step TUI walkthrough
+- [Safety & Backups](#safety--backups) — How data integrity is guaranteed
+- [How It Works](#how-it-works) — Technical details
+- [Testing](#testing) — 59 comprehensive tests
+- [Examples](#examples) — Common migration scenarios
+- [Troubleshooting](#troubleshooting) — Common issues and solutions
+
 ## What it does
 
 Claude Code stores session transcripts and project metadata in `~/.claude/projects/` using encoded folder names. When you move a project folder, the stored paths become stale — Claude can't find your sessions. This tool safely rewrites all those path references.
