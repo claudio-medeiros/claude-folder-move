@@ -126,6 +126,16 @@ function applyArgs(fx, projects, extra = []) {
   return ["--apply", "--origin", fx.origin, "--dest", fx.dest, "--projects", projects, "--yes", ...extra];
 }
 
+// --make-fixture: build one fixture (plus a bare no-metadata folder, so the
+// checklist's hide/rename keys have something to act on) and print its paths
+// as JSON, running no tests — used by the PTY smoke test.
+if (process.argv.includes("--make-fixture")) {
+  const fx = makeFixture("pty");
+  fs.mkdirSync(path.join(fx.origin, "no-meta-folder"));
+  console.log(JSON.stringify({ ...fx, backups: path.join(fx.root, "backups") }, null, 2));
+  process.exit(0);
+}
+
 // ---------------------------------------------------------------------------
 console.log("test: scan discovers fixture projects");
 {

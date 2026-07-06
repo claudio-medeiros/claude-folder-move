@@ -1,0 +1,63 @@
+#!/usr/bin/expect -f
+# Drives claude-folder-move.mjs through a full interactive migration in a REAL
+# PTY. The origin/destination pickers and the project checklist run the rich
+# alternate-screen UI: single raw keypresses (no \r) for navigation, toggles,
+# and the a/n/d/q/c/h shortcuts. \r is only sent for real line prompts
+# (custom-path text entry, the folder-copy y/n, the "migrate" confirmation).
+# Also exercises the claude-only hide-bare-folder ('h') toggle.
+# Args: toolPath cfgDir backupDir desktopNoneDir origin dest
+set timeout 30
+lassign $argv tool cfgDir backupDir desktopNoneDir origin dest
+
+proc await {pattern} {
+  expect {
+    -exact $pattern {}
+    timeout { puts "\nTIMEOUT waiting for: $pattern"; exit 2 }
+    eof { puts "\nUNEXPECTED EOF waiting for: $pattern"; exit 3 }
+  }
+}
+
+set env(CLAUDE_CONFIG_DIR) $cfgDir
+set env(CLAUDE_FOLDER_MOVE_BACKUP_DIR) $backupDir
+set env(CLAUDE_DESKTOP_SESSIONS_DIR) $desktopNoneDir
+spawn node $tool
+
+# Main menu is now a rich cursor list too — a direct number keypress (no \r)
+# jumps to and immediately selects that option.
+await "Main menu";                       send "1"
+
+# Origin picker: rich alt-screen list — 'c' drops to a plain custom-path prompt.
+await "Select the origin parent folder"; send "c"
+await "custom path (blank to cancel)";   send "$origin\r"
+
+# Destination picker: rich list if other project groups remain once origin is
+# excluded, otherwise straight to the same custom-path prompt. Handle both.
+expect {
+  -exact "Select the destination parent folder" {
+    send "c"
+    await "custom path (blank to cancel)"
+    send "$dest\r"
+  }
+  -exact "custom path (blank to cancel)" {
+    send "$dest\r"
+  }
+  timeout { puts "\nTIMEOUT waiting for destination picker"; exit 2 }
+  eof { puts "\nUNEXPECTED EOF waiting for destination picker"; exit 3 }
+}
+
+# Checklist: rich alt-screen list. Confirm the bare no-meta folder starts
+# hidden, toggle it visible with 'h', confirm it appears, toggle back off,
+# then select all eligible and finish.
+await "claude-folder-move — "
+await "bare folder(s) hidden";           send "h"
+await "bare folder(s) shown"
+await "no-meta-folder";                  send "h"
+await "bare folder(s) hidden";           send "a"
+send "d"
+await "(y/n): ";                         send "y\r"
+await {Type "migrate" to proceed};       send "migrate\r"
+await "Migration complete."
+await "Main menu";                       send "5"
+expect eof
+catch wait result
+exit [lindex $result 3]
