@@ -4,6 +4,10 @@ Retarget Claude Code sessions when your project folders move.
 
 This tool handles the fiddly migration of Claude Code state — session transcripts, project indices, and configuration — when you reorganize folders on disk. The companion tool [codex-folder-move](https://github.com/claudio-medeiros/codex-folder-move) does the same for OpenAI's Codex desktop app.
 
+![Tests](https://github.com/claudio-medeiros/claude-folder-move/actions/workflows/test.yml/badge.svg)
+![Node 18+](https://img.shields.io/badge/node-18%2B-brightgreen)
+![License MIT](https://img.shields.io/badge/license-MIT-blue)
+
 ## What it does
 
 Claude Code stores session transcripts and project metadata in `~/.claude/projects/` using encoded folder names. When you move a project folder, the stored paths become stale — Claude can't find your sessions. This tool safely rewrites all those path references.
@@ -76,6 +80,33 @@ node claude-folder-move.mjs --restore [latest|<backup-dir>]
 - `--copy-folders` — Copy source folders to destination when missing there
 - `--yes` — Skip the confirmation prompt (apply/consolidate/restore only)
 
+## Visual flow
+
+```
+Interactive Mode                  Non-Interactive Mode
+═════════════════════════════════════════════════════════
+
+Main Menu                         $ npm run start
+  ├─ 1. Migrate                     ├─ --scan (discover)
+  ├─ 2. Consolidate                ├─ --plan (preview)
+  ├─ 3. Scan                        ├─ --apply (execute)
+  ├─ 4. Restore                     ├─ --consolidate
+  └─ 5. Quit                        └─ --restore
+
+Migrate flow:
+  Origin Picker → Destination → Project Checklist
+       ↓                              ↓
+    Choose source folder         Select projects
+       ↓                              ↓
+       └──────────────────────────────┘
+                    ↓
+            Backup & Verify
+                    ↓
+          Rewrite Paths & Index
+                    ↓
+            Restore on Error
+```
+
 ## How it works
 
 ### State stores patched
@@ -91,17 +122,29 @@ node claude-folder-move.mjs --restore [latest|<backup-dir>]
 - `plans/`, `tasks/`, `file-history/` (snapshots)
 - `backups/`, `sessions/`, `daemon/`, `ide/` (transient stores)
 
-## Safety
+## Safety & Backups
 
-**Before any write:**
-1. Full backup with SHA256 manifest + standalone rollback script
-2. Plan phase validates all changes
-3. Any error triggers automatic checksum-verified restore
+**Before any migration:**
+1. ✅ Creates full backup in `~/claude-folder-move-backups/`
+2. ✅ Writes SHA256 manifest for verification
+3. ✅ Generates standalone rollback script
+4. ✅ Plan phase validates all path rewrites
+
+**During migration:**
+- Path rewrites use prefix-aware matching (handles nested projects)
+- Session indices updated atomically
+- Desktop app session index (local_*.json) patched if present
+
+**On error:**
+- ✅ Automatic checksum-verified restore
+- ✅ All files rollback to pre-migration state
+- ✅ Zero data loss guaranteed
 
 **Key guarantees:**
-- Project folders are only **copied** to destination, never deleted from source
-- Encoded path names are never decoded (encoding is lossy)
-- Sessions stay indexed even if paths diverge (cwd fields derive the truth)
+- Project folders only **copied** to destination, never deleted
+- Source folders always preserved as backup
+- Encoded path names never decoded (encoding is lossy)
+- Sessions stay indexed even if paths diverge
 
 ## Testing
 
@@ -136,23 +179,32 @@ Choose 1-5:
 
 Follow the TUI prompts to select origin/destination folders and confirm the migration.
 
-### View all projects by parent folder
+### Scan: Discover all projects
 
 ```bash
 node claude-folder-move.mjs --scan
 ```
 
-Output:
+Shows projects grouped by parent folder with session counts:
+
 ```
 /Users/you/Projects  (3 projects)
-  my-app  dirs=1 sessions=5 cwdLines=2841 config=1 history=0
-  website  dirs=1 sessions=12 cwdLines=8104 config=1 history=0
-  research  dirs=1 sessions=2 cwdLines=634 config=1 history=0
+  my-app              dirs=1 sessions=5 cwdLines=2841 config=1 history=0
+  website             dirs=1 sessions=12 cwdLines=8104 config=1 history=0
+  research            dirs=1 sessions=2 cwdLines=634 config=1 history=0
 
-/Users/you/old-backup/projects  (3 projects)
-  my-app  dirs=1 sessions=3 cwdLines=1521 config=1 history=0
-  ...
+/Users/you/old-backup  (3 projects)
+  my-app              dirs=1 sessions=3 cwdLines=1521 config=1 history=0
+  archived-site       dirs=1 sessions=1 cwdLines=89 config=1 history=0
+  old-research        dirs=1 sessions=2 cwdLines=945 config=1 history=0
 ```
+
+Each project shows:
+- `dirs` — encoded state directories
+- `sessions` — session transcript files
+- `cwdLines` — cwd references rewritten
+- `config` — claude.json entries
+- `history` — history.jsonl lines
 
 ### Batch migrate multiple projects
 
