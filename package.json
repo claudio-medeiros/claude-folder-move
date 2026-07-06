@@ -1,0 +1,24 @@
+{
+  "name": "claude-folder-move",
+  "version": "1.0.0",
+  "description": "Retarget Claude Code state when project folders move",
+  "type": "module",
+  "bin": {
+    "claude-folder-move": "./claude-folder-move.mjs"
+  },
+  "scripts": {
+    "test": "node test/run-tests.mjs"
+  },
+  "keywords": [
+    "claude",
+    "sessions",
+    "migration",
+    "folder",
+    "state"
+  ],
+  "author": "Claudio Medeiros",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
