@@ -111,10 +111,37 @@ Migrate flow:
 
 ### State stores patched
 
+**Before migration:**
+```
+~/.claude/
+├── projects/
+│   ├── Users-old-path-my-app/
+│   │   ├── 2024-01-15.jsonl  (cwd: /old/path/my-app)
+│   │   └── 2024-02-20.jsonl  (cwd: /old/path/my-app)
+│   └── Users-old-path-website/
+│       └── 2024-03-01.jsonl  (cwd: /old/path/website)
+├── claude.json               (projects: {"/old/path/my-app": ...})
+└── history.jsonl             (project: /old/path/my-app)
+```
+
+**After migration:**
+```
+~/.claude/
+├── projects/
+│   ├── Users-new-path-my-app/
+│   │   ├── 2024-01-15.jsonl  (cwd: /new/path/my-app) ← REWRITTEN
+│   │   └── 2024-02-20.jsonl  (cwd: /new/path/my-app) ← REWRITTEN
+│   └── Users-new-path-website/
+│       └── 2024-03-01.jsonl  (cwd: /new/path/website) ← REWRITTEN
+├── claude.json               (projects: {"/new/path/my-app": ...}) ← KEY MOVED
+└── history.jsonl             (project: /new/path/my-app) ← REWRITTEN
+```
+
+**What's rewritten:**
 - `~/.claude/projects/<encoded-path>/` — directory renamed to match new encoding
-- Session `*.jsonl` files — top-level `cwd` fields rewritten (prefix-aware)
-- `~/.claude/claude.json` — projects map entry moved to new path key
-- `~/.claude/history.jsonl` — per-line `project` field rewritten
+- Session `*.jsonl` files — top-level `cwd` fields (prefix-aware matching)
+- `~/.claude/claude.json` — projects map keys and path values
+- `~/.claude/history.jsonl` — per-line `project` field
 
 ### What stays untouched
 
@@ -148,13 +175,25 @@ Migrate flow:
 
 ## Testing
 
-The suite includes smoke tests for the TUI (terminal UI):
+Comprehensive test suite with 59 tests covering:
 
 ```bash
 npm test
 ```
 
-This runs interactive session flows through real pseudo-terminals, verifying menu navigation, rich text rendering, and the full migrate/restore cycle.
+Tests verify:
+- ✅ Project discovery and grouping
+- ✅ Path rewriting (simple and nested)
+- ✅ Session index updates
+- ✅ Desktop app index patching
+- ✅ Backup creation & verification
+- ✅ Automatic rollback on failure
+- ✅ Interactive TUI navigation
+- ✅ Collision detection & merge
+- ✅ Folder copy operations
+- ✅ Edge cases (corrupted lines, bare folders, renames)
+
+All tests run against real file fixtures in temp directories, with byte-level verification of state before/after.
 
 ## Examples
 
