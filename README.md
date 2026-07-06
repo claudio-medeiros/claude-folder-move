@@ -80,31 +80,58 @@ node claude-folder-move.mjs --restore [latest|<backup-dir>]
 - `--copy-folders` — Copy source folders to destination when missing there
 - `--yes` — Skip the confirmation prompt (apply/consolidate/restore only)
 
-## Visual flow
+## Interactive flow
 
 ```
-Interactive Mode                  Non-Interactive Mode
-═════════════════════════════════════════════════════════
+Step 1: Main Menu
+────────────────────────────────────────────────────────
+claude-folder-move — Claude config dir: /Users/you/.claude
 
-Main Menu                         $ npm run start
-  ├─ 1. Migrate                     ├─ --scan (discover)
-  ├─ 2. Consolidate                ├─ --plan (preview)
-  ├─ 3. Scan                        ├─ --apply (execute)
-  ├─ 4. Restore                     ├─ --consolidate
-  └─ 5. Quit                        └─ --restore
+ ● Main menu
+   1. Migrate projects (retarget a folder move)
+   2. Consolidate a project's scattered history
+   3. Scan Claude state
+   4. Restore from backup
+   5. Quit
 
-Migrate flow:
-  Origin Picker → Destination → Project Checklist
-       ↓                              ↓
-    Choose source folder         Select projects
-       ↓                              ↓
-       └──────────────────────────────┘
-                    ↓
-            Backup & Verify
-                    ↓
-          Rewrite Paths & Index
-                    ↓
-            Restore on Error
+
+Step 2: Origin Picker (Rich TUI)
+────────────────────────────────────────────────────────
+Select the origin parent folder
+ ● /Users/you/old-projects
+   /Users/you/archive/projects
+   [c] enter custom path
+
+
+Step 3: Destination Picker
+────────────────────────────────────────────────────────
+Select the destination parent folder
+ ● /Users/you/projects
+   /Volumes/backup/projects
+   [c] enter custom path
+
+
+Step 4: Project Checklist (Rich TUI with toggles)
+────────────────────────────────────────────────────────
+claude-folder-move — Migrate: /old → /new
+
+Eligible projects (bare folder(s) hidden)
+ ✓ my-app              dirs=1 sessions=5 cwdLines=2841
+ ✓ website             dirs=1 sessions=12 cwdLines=8104
+ ✓ research            dirs=1 sessions=2 cwdLines=634
+
+Shortcuts: [a] select all  [d] deselect  [h] show bare  [↑↓] navigate
+
+
+Step 5: Confirmation
+────────────────────────────────────────────────────────
+Ready to migrate 3 projects?
+
+Backup: ~/claude-folder-move-backups/2024-07-06T19-00-00Z/
+  - Projects: /old → /new
+  - Copy folders: yes
+  
+Type "migrate" to proceed, or ctrl+c to cancel
 ```
 
 ## How it works
